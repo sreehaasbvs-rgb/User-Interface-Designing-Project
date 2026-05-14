@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Starbucks India | Final Project</title>
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<style>
+:root {
+    --sb-green: #006241;
+    --sb-dark: #1e3932;
+    --sb-gold: #cba258;
+    --white: #ffffff;
+    --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+    font-family:'Segoe UI', system-ui, sans-serif;
+    background:white;
+    color:#2d2d2d;
+    line-height:1.6;
+}
+
+/* NAV */
+nav{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:15px 8%; background:white; position:sticky; top:0; z-index:1000;
+    box-shadow:0 4px 15px rgba(0,0,0,0.08); transition: var(--transition);
+}
+nav.scrolled { padding:12px 8%; box-shadow:0 6px 20px rgba(0,0,0,0.12); }
+
+nav h2 { color: var(--sb-green); font-size: 1.9rem; font-weight: 700; }
+
+nav ul{
+    display:flex; gap:30px; list-style:none;
+}
+nav ul li a{
+    text-decoration:none; color:#333; font-weight:600; transition: var(--transition);
+}
+nav ul li a:hover{ color: var(--sb-green); }
+
+/* Promo */
+.promo-row{
+    display:flex; min-height:520px; flex-wrap:wrap;
+}
+.promo-row:nth-child(even){flex-direction:row-reverse;}
+.promo-image{
+    flex:1; background-size:cover; background-position:center; min-height:520px;
+}
+.promo-content{
+    flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center;
+    padding:60px 50px; text-align:center; background: #f2f0eb;
+}
+.promo-content h2{ font-size:3.2rem; color:var(--sb-dark); }
+
+/* Rewards */
+.rewards-section {
+    padding: 80px 8%;
+    background: linear-gradient(135deg, #f2f0eb, #d4e9e2);
+    text-align:center;
+}
+.star-count { font-size: 4.5rem; font-weight: 700; color: var(--sb-dark); margin: 20px 0; }
+.stars-container { display: flex; justify-content: center; gap: 8px; font-size: 2.8rem; margin: 15px 0; }
+.rewards-card {
+    max-width: 600px; margin: 40px auto; background: white; padding: 40px;
+    border-radius: 24px; box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+}
+
+/* Menu Tabs */
+.menu-controls{
+    display:flex; justify-content:center; flex-wrap:wrap; gap:12px; margin:40px 0;
+}
+.tab-btn{
+    padding:12px 28px; border:none; background:#f1f1f1; border-radius:50px;
+    cursor:pointer; font-weight:600; transition: var(--transition);
+}
+.tab-btn.active{ background:var(--sb-green); color:white; }
+
+/* Grid */
+.grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+    gap:30px; padding:0 8%;
+}
+.card{
+    background:white; border-radius:20px; overflow:hidden;
+    box-shadow:0 5px 15px rgba(0,0,0,0.06); transition: var(--transition);
+}
+.card:hover{ transform:translateY(-12px); box-shadow:0 20px 30px rgba(0,98,65,0.15); }
+.card img{ width:100%; height:220px; object-fit:cover; }
+.card-body{padding:22px;}
+.card-body h3{margin-bottom:8px; color:var(--sb-dark);}
+
+/* Map */
+#map { height: 480px; border-radius: 20px; margin: 30px 8%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+
+/* Feedback */
+.feedback-box{
+    max-width:520px; margin:40px auto; background:white; padding:40px;
+    border-radius:24px; box-shadow:0 15px 40px rgba(0,0,0,0.1);
+}
+.feedback-box input, .feedback-box textarea, .feedback-box select{
+    width:100%; padding:16px; margin-bottom:18px; border:2px solid #e5e5e5; border-radius:12px;
+}
+.feedback-box button{
+    width:100%; padding:16px; background:var(--sb-green); color:white;
+    border:none; border-radius:50px; font-size:1.1rem; font-weight:600; cursor:pointer;
+}
+
+/* Footer */
+footer{
+    background:var(--sb-dark); color:white; text-align:center;
+    padding:60px 20px; margin-top:80px;
+}
+
+@media (max-width: 768px) {
+    .promo-row{ flex-direction:column !important; min-height:auto; }
+    .promo-image{ min-height:300px; }
+    nav ul{ display:none; }
+}
+</style>
+</head>
+
+<body>
+
+<nav id="navbar">
+    <h2> Starbucks</h2>
+    <ul>
+        <li><a href="#menu">Menu</a></li>
+        <li><a href="#stores">Stores</a></li>
+        <li><a href="#rewards">Rewards</a></li>
+        <li><a href="#feedback">Feedback</a></li>
+    </ul>
+</nav>
+
+<!-- Promo -->
+<div class="promo-row">
+    <div class="promo-image" style="background-image:url('img.jpg')"></div>
+    <div class="promo-content">
+        <h2>Refresh Your Day</h2>
+        <p> Refresher is here!</p>
+        <button onclick="document.getElementById('menu').scrollIntoView({behavior:'smooth'})" 
+                style="margin-top:25px;padding:14px 40px;background:var(--sb-green);color:white;border:none;border-radius:50px;font-size:1.1rem;cursor:pointer">
+            Explore Menu
+        </button>
+    </div>
+</div>
+
+<!-- REWARDS - Interactive -->
+<section id="rewards" class="rewards-section">
+    <h2 style="font-size:3rem;color:var(--sb-dark)">My Rewards</h2>
+    <div class="stars-container" id="stars-display">★★★★☆</div>
+    <div class="star-count" id="star-count">245</div>
+    <p style="font-size:1.3rem;color:#444">Stars earned this month</p>
+
+    <div class="rewards-card">
+        <h3>Enter Bill Token Code</h3>
+        <p style="margin:10px 0 20px;color:#666">Enter the code from your receipt to earn stars</p>
+        
+        <input type="text" id="reward-code" placeholder="Enter Code (e.g. SB2026HYD)" 
+               style="width:100%;padding:16px;font-size:1.1rem;border:2px solid #ddd;border-radius:12px;margin-bottom:15px;text-transform:uppercase">
+        
+        <button onclick="redeemCode()" 
+                style="width:100%;padding:16px;background:var(--sb-green);color:white;border:none;border-radius:50px;font-size:1.1rem;cursor:pointer">
+            Redeem Code & Earn Stars
+        </button>
+        <p id="reward-msg" style="margin-top:15px;min-height:50px"></p>
+    </div>
+
+    <p style="max-width:500px;margin:20px auto;color:#555">
+        <strong>Sample Codes:</strong> SB2026HYD, STARBUCKS100, REWARD500, HYDCOFFEE25, VIZAGBREW
+    </p>
+</section>
+
+<!-- MENU -->
+<section id="menu" style="padding:80px 8% 60px">
+    <h2 class="section-title" style="text-align:center;font-size:3rem;color:var(--sb-dark);margin-bottom:10px">Our Menu</h2>
+    <div class="menu-controls" id="category-tabs"></div>
+    <div class="grid" id="menu-content"></div>
+</section>
+
+<!-- STORES -->
+<section id="stores" style="background:#f7f7f7;padding:60px 0">
+    <h2 class="section-title" style="text-align:center">Find a Store Near You</h2>
+    
+    <input type="text" id="storeSearch" placeholder="🔍 Search by city or area" 
+           onkeyup="filterStores()" style="display:block;margin:20px auto;padding:16px 24px;width:90%;max-width:500px;border-radius:50px;border:2px solid #ddd;">
+
+    <div id="map"></div>
+    <div class="grid" id="storeGrid"></div>
+</section>
+
+<!-- FEEDBACK -->
+<section id="feedback" style="padding:80px 8%">
+    <h2 class="section-title" style="text-align:center">Customer Feedback</h2>
+    <div class="feedback-box">
+        <form onsubmit="submitFeedback(event)">
+            <input type="text" id="fb-name" placeholder="Your Name" required>
+            <input type="email" id="fb-email" placeholder="Email" required>
+            <select id="fb-category" required>
+                <option value="">Select Category</option>
+                <option value="coffee">Coffee Experience</option>
+                <option value="service">Service</option>
+                <option value="food">Food</option>
+                <option value="other">Other</option>
+            </select>
+            <textarea id="fb-message" rows="5" placeholder="Your feedback..." required></textarea>
+            <button type="submit">Submit Feedback</button>
+            <p id="fb-msg" style="text-align:center;margin-top:15px;font-weight:600;color:var(--sb-green)"></p>
+        </form>
+    </div>
+</section>
+
+<footer>
+    <p>© 2026 Starbucks India • Final Web Development Project</p>
+    <p style="margin-top:10px;opacity:0.8">Built with HTML, CSS, JavaScript & Leaflet.js</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// ==================== REWARDS LOGIC ====================
+let totalStars = 245;
+
+const validCodes = {
+    "SB2026HYD": 50,
+    "STARBUCKS100": 100,
+    "REWARD500": 75,
+    "HYDCOFFEE25": 25,
+    "VIZAGBREW": 60,
+    "BILLTOKEN": 40
+};
+
+function redeemCode() {
+    const codeInput = document.getElementById("reward-code");
+    const msgEl = document.getElementById("reward-msg");
+    const code = codeInput.value.trim().toUpperCase();
+
+    if (!code) {
+        msgEl.style.color = "red";
+        msgEl.textContent = "Please enter a code";
+        return;
+    }
+
+    if (validCodes[code]) {
+        const starsEarned = validCodes[code];
+        totalStars += starsEarned;
+        
+        msgEl.style.color = "var(--sb-green)";
+        msgEl.innerHTML = `🎉 Success! You earned <strong>+${starsEarned}</strong> stars!`;
+        
+        updateStarDisplay();
+        
+        setTimeout(() => {
+            codeInput.value = "";
+            msgEl.textContent = "";
+        }, 3000);
+    } else {
+        msgEl.style.color = "red";
+        msgEl.textContent = "Invalid code. Try again!";
+    }
+}
+
+function updateStarDisplay() {
+    document.getElementById("star-count").textContent = totalStars;
+    const fullStars = Math.floor(totalStars / 50);
+    let starsHTML = "★".repeat(Math.min(fullStars, 5));
+    starsHTML += "☆".repeat(5 - Math.min(fullStars, 5));
+    document.getElementById("stars-display").innerHTML = starsHTML;
+}
+
+// ==================== MENU DATA ====================
+const menuData = [
+    {name:"Caffè Latte", category:"hot-coffee", img:"https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?w=800"},
+    {name:"Cappuccino", category:"hot-coffee", img:"https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=800"},
+    {name:"Caramel Macchiato", category:"hot-coffee", img:"https://images.unsplash.com/photo-1485808191679-5f86510681a2?w=800"},
+    {name:"Americano", category:"hot-coffee", img:"https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=800"},
+    {name:"Mocha", category:"hot-coffee", img:"https://images.unsplash.com/photo-1534778101976-62847782c213?w=800"},
+    {name:"Java Chip Frappuccino", category:"cold-coffee", img:"https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=800"},
+    {name:"Caramel Frappuccino", category:"cold-coffee", img:"img1.jpg"},
+    {name:"Cold Brew", category:"cold-coffee", img:"img2.jpg"},
+    {name:"Strawberry Acai Refresher", category:"refresher", img:"img3.jpg"},
+    {name:"Pink Drink", category:"refresher", img:"img4.jpg"},
+    {name:"Mango Dragonfruit", category:"refresher", img:"img5.jpg"},
+    {name:"Butter Croissant", category:"food", img:"https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=800"},
+    {name:"Blueberry Muffin", category:"food", img:"img6.jpg"},
+    {name:"Red Velvet Cake", category:"food", img:"https://images.unsplash.com/photo-1551024601-bec78aea704b?w=800"},
+    {name:"Iced Vanilla Lavender Coffee With Oatmilk Cold Foam", category:"cold-coffee", img:"img7.jpg"},
+    {name:"Creamy Salted Caramel Cold Brew", category:"cold-coffee", img:"img8.jpg"},
+    {name:"Mango Dream Energy Drink", category:"refresher", img:"img9.jpg"},
+    {name:"Cannon Ball Drink", category:"refresher", img:"img10.jpg"},
+    {name:"Chocolate Croissant", category:"food", img:"img11.jpg"},
+    {name:"Avocado Spread", category:"food", img:"img12.jpg"},
+];
+
+// ==================== STORE DATA (with Vizag) ====================
+const storeData = [
+    {city:"Vizag", area:"Dwaraka Nagar", lat:17.7134, lng:83.3190, address:"Dwaraka Nagar, Vizag"},
+    {city:"Hyderabad", area:"Banjara Hills", lat:17.4099, lng:78.4478, address:"Road No. 3, Banjara Hills"},
+    {city:"Hyderabad", area:"Gachibowli", lat:17.4486, lng:78.3500, address:"SLN Terminus, Gachibowli"},
+    {city:"Delhi", area:"Connaught Place", lat:28.6304, lng:77.2177, address:"Inner Circle, CP"},
+    {city:"Mumbai", area:"Bandra West", lat:19.0596, lng:72.8295, address:"Linking Road"},
+    {city:"Bengaluru", area:"MG Road", lat:12.9750, lng:77.6080, address:"MG Road"}
+];
+
+let currentCategory = 'all';
+let map, markers = [];
+
+// Category Tabs & Menu
+function renderCategoryTabs() { /* same as your code */ 
+    const categories = [
+        {id:'all', label:'All'},
+        {id:'hot-coffee', label:'Hot Coffees'},
+        {id:'cold-coffee', label:'Cold Coffees'},
+        {id:'refresher', label:'Refreshers'},
+        {id:'food', label:'Food'}
+    ];
+    let html = '';
+    categories.forEach(cat => {
+        html += `<button class="tab-btn ${cat.id === currentCategory ? 'active' : ''}" onclick="filterByCategory('${cat.id}')">${cat.label}</button>`;
+    });
+    document.getElementById('category-tabs').innerHTML = html;
+}
+
+function renderMenu(filteredData = menuData) {
+    let html = "";
+    filteredData.forEach(m => {
+        html += `
+        <div class="card">
+            <img src="${m.img}" alt="${m.name}">
+            <div class="card-body">
+                <h3>${m.name}</h3>
+                <p>₹ 285 • Popular</p>
+            </div>
+        </div>`;
+    });
+    document.getElementById("menu-content").innerHTML = html;
+}
+
+function filterByCategory(category) {
+    currentCategory = category;
+    renderCategoryTabs();
+    if (category === 'all') renderMenu(menuData);
+    else renderMenu(menuData.filter(item => item.category === category));
+}
+
+// Map & Stores
+function initMap() {
+    map = L.map('map').setView([17.3850, 78.4867], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    markers = [];
+    storeData.forEach(store => {
+        const marker = L.marker([store.lat, store.lng]).addTo(map);
+        marker.bindPopup(`<b>${store.city}</b><br>${store.area}<br>${store.address}`);
+        markers.push(marker);
+    });
+}
+
+function renderStores(list = storeData) {
+    let html = "";
+    list.forEach(s => {
+        html += `
+        <div class="card">
+            <div class="card-body">
+                <h3>${s.city}</h3>
+                <p>${s.area}</p>
+                <small>${s.address}</small><br><br>
+                <button onclick="focusOnMap(${s.lat}, ${s.lng})" style="padding:8px 22px;background:var(--sb-green);color:white;border:none;border-radius:30px;cursor:pointer">Show on Map</button>
+            </div>
+        </div>`;
+    });
+    document.getElementById("storeGrid").innerHTML = html;
+}
+
+function focusOnMap(lat, lng) {
+    map.flyTo([lat, lng], 16, {duration: 1.5});
+}
+
+function filterStores() {
+    const q = document.getElementById("storeSearch").value.toLowerCase();
+    const filtered = storeData.filter(s => 
+        s.city.toLowerCase().includes(q) || s.area.toLowerCase().includes(q)
+    );
+    renderStores(filtered.length ? filtered : storeData);
+}
+
+// Feedback
+function submitFeedback(e) {
+    e.preventDefault();
+    const name = document.getElementById("fb-name").value;
+    document.getElementById("fb-msg").innerHTML = `Thank you, ${name}! Your feedback has been received.`;
+    e.target.reset();
+    setTimeout(() => document.getElementById("fb-msg").innerHTML = "", 5000);
+}
+
+// Initialize
+function init() {
+    renderCategoryTabs();
+    renderMenu();
+    initMap();
+    renderStores(storeData);
+    updateStarDisplay();
+
+    window.addEventListener('scroll', () => {
+        document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+    });
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
